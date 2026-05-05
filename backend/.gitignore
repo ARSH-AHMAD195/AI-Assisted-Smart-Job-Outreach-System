@@ -2,5 +2,10 @@ venv/
 .env
 .env.local
 __pycache__/
-index.html
+index2.html
+index3.html
+index4.html
+migratetonew.md
+test_job_matcher.py
 verify_parser.py
+parserindex.html

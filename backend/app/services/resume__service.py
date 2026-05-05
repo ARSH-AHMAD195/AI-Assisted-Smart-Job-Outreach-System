@@ -5,12 +5,7 @@ from rapidfuzz import process, fuzz
 from typing import List, Optional, Dict
 from app.schemas.user import UserProfile, FinalUserProfile, ResumeEntry
 from app.utils.resume_parser import extract_text
-
-# Load spaCy model
-try:
-    nlp = spacy.load("en_core_web_sm")
-except OSError:
-    nlp = spacy.blank("en")
+from app.utils.skills import nlp, SKILLS_DB, TECH_WHITELIST, SOFT_SKILL_KEYWORDS, hybrid_tech_extraction
 
 # Robust Section Header Mapping
 SECTION_MAP = {
@@ -24,20 +19,6 @@ SECTION_MAP = {
     "INTERESTS": ["Interests", "Hobbies", "Extra-curricular Activities"]
 }
 
-# Categorized Skills Database (The master whitelist)
-SKILLS_DB = {
-    "Languages": ["Python", "Java", "C++", "C", "JavaScript", "TypeScript", "SQL", "HTML", "CSS", "Go", "Rust", "PHP", "Ruby", "Swift", "Kotlin"],
-    "Frontend": ["React", "Angular", "Vue", "Next.js", "Tailwind CSS", "Bootstrap", "Svelte", "Redux", "Vite", "jQuery", "UI/UX"],
-    "Backend": ["FastAPI", "Django", "Flask", "Node.js", "Express.js", "Spring Boot", "Laravel", "Postman", "GraphQL", "REST API"],
-    "DevOps/Cloud": ["Docker", "Kubernetes", "AWS", "Azure", "GCP", "Git", "GitHub", "Jenkins", "Terraform", "Linux", "CI/CD", "Prometheus"],
-    "Data/AI": ["Machine Learning", "Deep Learning", "NLP", "Computer Vision", "TensorFlow", "PyTorch", "NumPy", "Pandas", "Scikit-learn", "OpenCV", "Face Recognition", "R Language", "Spark"],
-    "Databases": ["MySQL", "PostgreSQL", "MongoDB", "Redis", "SQLite", "Oracle", "Cassandra", "Elasticsearch", "Prisma"]
-}
-
-# Flattened Whitelist for strict validation
-TECH_WHITELIST = {skill.lower() for cat in SKILLS_DB.values() for skill in cat}
-# Soft Skills for mapping
-SOFT_SKILL_KEYWORDS = ["Communication", "Teamwork", "Problem Solving", "Leadership", "Presentation", "Self-Learning", "Time Management", "Collaboration", "Decision Making", "Adaptability"]
 # Add sections to exclusion list to prevent header-name hallucination
 SECTION_HEADERS = {v.lower() for sub in SECTION_MAP.values() for v in sub}
 
@@ -131,29 +112,6 @@ def extract_name(text: str) -> Optional[str]:
                     return candidate
             
     return None
-
-def hybrid_tech_extraction(text: str, is_soft_skills: bool = False) -> List[str]:
-    """Extracts tech stack strictly against the TECH_WHITELIST."""
-    found = set()
-    
-    if is_soft_skills:
-        # Soft Skills detection
-        for sk in SOFT_SKILL_KEYWORDS:
-            if re.search(r'\b' + re.escape(sk) + r'\b', text, re.IGNORECASE):
-                found.add(sk)
-        return sorted(list(found))
-
-    # Technical Skills - Strict Whitelist approach
-    doc = nlp(text)
-    matcher = PhraseMatcher(nlp.vocab, attr="LOWER")
-    patterns = [nlp.make_doc(skill) for skill in TECH_WHITELIST]
-    matcher.add("TECH_ONLY", patterns)
-    
-    matches = matcher(doc)
-    for _, start, end in matches:
-        found.add(doc[start:end].text.title())
-                
-    return sorted(list(found))
 
 def extract_structured_entries(section_text: str, is_project: bool = True) -> List[ResumeEntry]:
     """Robust state-machine for projects: Strictly separates titles from descriptions."""

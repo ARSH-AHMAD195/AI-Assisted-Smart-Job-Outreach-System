@@ -1,9 +1,14 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 import uvicorn
 from app.services.resume__service import parse_resume, create_final_profile
+from app.services.job_service import calculate_match
+from app.services.email_service import EmailService
 from app.schemas.user import FinalUserProfile
+from app.schemas.job import JobMatchRequest, JobMatchResult
+from app.schemas.email import EmailRequest, EmailResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 import tempfile
 import os
 
@@ -20,7 +25,8 @@ app.add_middleware(
 
 @app.get("/")
 async def root():
-    return {"status": "online", "message": "Resume Parser API is running"}
+    """Serve the main unified dashboard."""
+    return FileResponse("index.html")
 
 @app.post("/api/uploadfile/", response_model=FinalUserProfile)
 async def upload_resume(file: UploadFile = File(...)):
@@ -64,6 +70,39 @@ async def upload_resume(file: UploadFile = File(...)):
                 os.remove(temp_file_path)
             except Exception as cleanup_err:
                 print(f"Warning: Failed to delete temp file {temp_file_path}: {cleanup_err}")
+
+@app.post("/api/match/", response_model=JobMatchResult)
+async def match_job(request: JobMatchRequest):
+    """
+    Match a FinalUserProfile against a Job Description text with weighted scoring.
+    """
+    try:
+        result = calculate_match(request.user_profile, request.jd_text)
+        return result
+    except Exception as e:
+        print(f"Error matching job: {str(e)}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"An error occurred during job matching: {str(e)}"
+        )
+
+@app.post("/api/generate-email/", response_model=EmailResponse)
+async def generate_email(request: EmailRequest):
+    """
+    Generate a personalized outreach email using LLM based on profile and JD.
+    """
+    try:
+        result = EmailService.generate_email(request)
+        return result
+    except Exception as e:
+        print(f"Error generating email: {str(e)}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"An error occurred while generating the email: {str(e)}"
+        )
+
+# Static files at /static (NOT "/" — that would intercept API routes)
+app.mount("/static", StaticFiles(directory="."), name="static")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

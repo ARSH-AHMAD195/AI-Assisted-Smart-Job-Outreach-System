@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Outreach AI | Parse • Match • Outreach</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --bg: #0b0f1a;
+            --card: rgba(23, 28, 41, 0.8);
+            --border: rgba(255, 255, 255, 0.08);
+            --text: #f3f4f6;
+            --text-dim: #9ca3af;
+            --accent-green: #10b981;
+            --accent-red: #f87171;
+            --accent-purple: #8b5cf6;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            background-image:
+                radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.08) 0%, transparent 40%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 4rem 1rem;
+        }
+
+        .container { max-width: 1000px; width: 100%; }
+
+        /* Stepper */
+        .stepper { display: flex; justify-content: center; gap: 6rem; margin-bottom: 3.5rem; position: relative; }
+        .stepper::before { content: ''; position: absolute; top: 20px; left: 15%; width: 70%; height: 2px; background: var(--border); z-index: 1; }
+        .step { position: relative; z-index: 2; text-align: center; cursor: default; }
+        .step-circle { width: 42px; height: 42px; border-radius: 50%; background: var(--card); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; margin: 0 auto 0.6rem; font-weight: 700; font-size: 0.9rem; transition: all 0.4s ease; }
+        .step.done .step-circle { background: var(--accent-green); border-color: var(--accent-green); }
+        .step.active .step-circle { background: var(--primary); border-color: var(--primary); box-shadow: 0 0 20px rgba(99, 102, 241, 0.5); }
+        .step span { font-size: 0.78rem; color: var(--text-dim); transition: 0.3s; }
+        .step.active span, .step.done span { color: var(--text); font-weight: 600; }
+
+        /* Stage Containers */
+        .stage { display: none; animation: fadeIn 0.5s ease-out; }
+        .stage.active { display: block; }
+
+        .card { background: var(--card); backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: 28px; padding: 3rem; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+
+        h1 { font-size: 2.5rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom: 0.5rem; text-align: center; background: linear-gradient(to right, var(--primary-light), var(--accent-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.75rem; }
+        h3 { font-size: 1.1rem; font-weight: 600; }
+        p.subtitle { text-align: center; color: var(--text-dim); margin-bottom: 3rem; font-size: 1rem; }
+
+        /* Upload */
+        .upload-area { display: block; border: 2px dashed var(--primary); border-radius: 20px; padding: 4rem 2rem; text-align: center; cursor: pointer; transition: 0.3s; background: rgba(99, 102, 241, 0.03); }
+        .upload-area:hover { background: rgba(99, 102, 241, 0.08); border-color: var(--primary-light); }
+        .upload-area.success { border-color: var(--accent-green); background: rgba(16, 185, 129, 0.05); }
+        input[type="file"] { display: none; }
+
+        textarea { width: 100%; height: 240px; background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; color: white; resize: none; margin-bottom: 1.5rem; font-size: 0.95rem; line-height: 1.6; outline: none; transition: border-color 0.3s; }
+        textarea:focus { border-color: var(--primary); }
+
+        .btn { width: 100%; padding: 1.25rem; border-radius: 14px; border: none; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 0.5rem; color: white; }
+        .btn-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--accent-purple) 100%); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(99, 102, 241, 0.35); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+        /* Match Results */
+        .match-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
+        .score-box { padding: 1.25rem 2.5rem; border-radius: 16px; text-align: center; }
+        .score-box.excellent { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); }
+        .score-box.good { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.25); }
+        .score-box.poor { background: rgba(248, 113, 113, 0.1); border: 1px solid rgba(248, 113, 113, 0.25); }
+        .score-num { font-size: 2.2rem; font-weight: 800; }
+        .score-num.excellent { color: var(--accent-green); }
+        .score-num.good { color: #f59e0b; }
+        .score-num.poor { color: var(--accent-red); }
+
+        .skills-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2.5rem; }
+        .skill-tag { display: inline-block; padding: 0.4rem 0.85rem; border-radius: 8px; font-size: 0.82rem; margin: 0.25rem; background: rgba(255,255,255,0.04); font-weight: 500; }
+        .matched { color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.3); }
+        .missing { color: var(--accent-red); border: 1px solid rgba(248, 113, 113, 0.3); }
+
+        /* Email */
+        .email-section { border-top: 1px solid var(--border); padding-top: 2rem; margin-top: 0.5rem; }
+        .tone-row { display: flex; gap: 1rem; margin-top: 1.5rem; align-items: stretch; }
+        .tone-row select { background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: white; border-radius: 12px; padding: 0 1.25rem; font-size: 0.9rem; outline: none; min-width: 160px; }
+        .email-output { display: none; margin-top: 2rem; animation: fadeIn 0.4s ease-out; }
+        .email-body { background: rgba(0,0,0,0.5); padding: 2rem; border-radius: 20px; border: 1px solid var(--border); white-space: pre-wrap; line-height: 1.75; font-size: 0.95rem; color: #d1d5db; position: relative; }
+        .copy-btn { position: absolute; top: 1rem; right: 1rem; background: rgba(255,255,255,0.1); border: 1px solid var(--border); padding: 0.5rem 1.25rem; border-radius: 10px; color: white; cursor: pointer; font-size: 0.75rem; font-weight: 600; transition: 0.2s; }
+        .copy-btn:hover { background: rgba(255,255,255,0.2); }
+
+        .mini-profile { margin-bottom: 2rem; padding: 1.25rem 1.5rem; background: rgba(99, 102, 241, 0.06); border: 1px solid rgba(99, 102, 241, 0.15); border-radius: 14px; font-size: 0.9rem; display: flex; align-items: center; gap: 0.75rem; }
+        .mini-profile .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-green); flex-shrink: 0; }
+
+        .error-toast { display: none; position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: rgba(248, 113, 113, 0.15); border: 1px solid rgba(248, 113, 113, 0.3); color: var(--accent-red); padding: 1rem 2rem; border-radius: 12px; font-size: 0.9rem; z-index: 999; backdrop-filter: blur(10px); }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+        .loader { display: none; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-top-color: #FFF; border-radius: 50%; animation: spin 0.7s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Stepper -->
+        <div class="stepper">
+            <div class="step active" id="s1">
+                <div class="step-circle">1</div>
+                <span>Resume</span>
+            </div>
+            <div class="step" id="s2">
+                <div class="step-circle">2</div>
+                <span>Job Match</span>
+            </div>
+            <div class="step" id="s3">
+                <div class="step-circle">3</div>
+                <span>Outreach</span>
+            </div>
+        </div>
+
+        <!-- Stage 1: Upload Resume -->
+        <div class="stage active" id="stage1">
+            <div class="card">
+                <h1>Analyze Your Resume</h1>
+                <p class="subtitle">Upload your PDF to start the smart outreach pipeline</p>
+                <label class="upload-area" id="uploadArea" for="resumeFile">
+                    <p id="uploadText" style="font-size: 1rem; color: var(--text-dim);">📄 Click or Drag Resume PDF here</p>
+                    <div class="loader" id="l1" style="margin: 0 auto;"></div>
+                </label>
+                <input type="file" id="resumeFile" accept=".pdf">
+            </div>
+        </div>
+
+        <!-- Stage 2: Job Matching -->
+        <div class="stage" id="stage2">
+            <div class="card">
+                <div class="mini-profile" id="miniProfile">
+                    <div class="dot"></div>
+                    <span>Profile loaded</span>
+                </div>
+                <h2>Paste the Job Description</h2>
+                <p style="color: var(--text-dim); margin-bottom: 1.5rem; font-size: 0.9rem;">We'll extract requirements and match them against your skills</p>
+                <textarea id="jdInput" placeholder="Paste the full Job Description here...&#10;&#10;Tip: Include the 'Requirements' and 'Preferred' sections for best results."></textarea>
+                <button class="btn btn-primary" id="matchBtn" onclick="runMatch()" disabled>
+                    <span id="matchText">Calculate Alignment</span>
+                    <div class="loader" id="l2"></div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Stage 3: Results & Email -->
+        <div class="stage" id="stage3">
+            <div class="card">
+                <div class="match-header">
+                    <div>
+                        <h2 id="matchLabel" style="margin-bottom: 0.25rem;">Good Match</h2>
+                        <p id="matchAnalysis" style="color: var(--text-dim); font-size: 0.85rem;"></p>
+                    </div>
+                    <div class="score-box" id="scoreBox">
+                        <div class="score-num" id="scoreNum">0%</div>
+                        <div style="font-size: 0.65rem; color: var(--text-dim); margin-top: 0.25rem;">MATCH SCORE</div>
+                    </div>
+                </div>
+
+                <div class="skills-grid">
+                    <div>
+                        <h4 style="margin-bottom: 1rem; color: var(--accent-green); font-size: 0.9rem;">✓ Matched Skills</h4>
+                        <div id="matchedSkills"></div>
+                    </div>
+                    <div>
+                        <h4 style="margin-bottom: 1rem; color: var(--accent-red); font-size: 0.9rem;">⚠ Skills to Develop</h4>
+                        <div id="missingSkills"></div>
+                    </div>
+                </div>
+
+                <div class="email-section">
+                    <h3>AI-Powered Outreach Email</h3>
+                    <p style="color: var(--text-dim); font-size: 0.85rem; margin-top: 0.5rem;">Generate a personalized email based on your match analysis</p>
+                    <div class="tone-row">
+                        <button class="btn btn-primary" id="emailBtn" onclick="runEmail()" style="flex: 1;">
+                            <span id="emailText">✨ Generate Email</span>
+                            <div class="loader" id="l3"></div>
+                        </button>
+                        <select id="toneSelect">
+                            <option value="Professional">👔 Professional</option>
+                            <option value="Enthusiastic">🚀 Enthusiastic</option>
+                            <option value="Concise">⚡ Concise</option>
+                        </select>
+                    </div>
+                    <div class="email-output" id="emailOutput">
+                        <div class="email-body" id="emailBody">
+                            <button class="copy-btn" onclick="copyMail()">Copy</button>
+                            <div id="emailContent"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="error-toast" id="errorToast"></div>
+
+    <script>
+        const BASE = 'http://127.0.0.1:8000';
+        let userData = null;
+        let matchData = null;
+
+        function showError(msg) {
+            const t = document.getElementById('errorToast');
+            t.innerText = msg;
+            t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 4000);
+        }
+
+        function setLoading(loaderId, textId, loading) {
+            document.getElementById(loaderId).style.display = loading ? 'block' : 'none';
+            document.getElementById(textId).style.display = loading ? 'none' : 'inline';
+        }
+
+        // ─── Stage 1: Resume Upload ───
+        document.getElementById('resumeFile').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            setLoading('l1', 'uploadText', true);
+
+            try {
+                const res = await fetch(BASE + '/api/uploadfile/', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Upload failed');
+                userData = data;
+
+                document.getElementById('uploadArea').classList.add('success');
+                document.getElementById('uploadText').innerText = `✓ ${userData.name || 'Profile'} — ${userData.skills.length} skills detected`;
+                setLoading('l1', 'uploadText', false);
+
+                document.getElementById('miniProfile').innerHTML =
+                    `<div class="dot"></div><span><b>${userData.name}</b> &nbsp;•&nbsp; ${userData.skills.length} skills &nbsp;•&nbsp; ${userData.projects.length} projects</span>`;
+
+                setTimeout(() => goToStep(2), 600);
+            } catch (err) {
+                setLoading('l1', 'uploadText', false);
+                document.getElementById('uploadText').innerText = '📄 Click or Drag Resume PDF here';
+                showError('Resume upload failed: ' + err.message);
+            }
+        });
+
+        // ─── JD Input Validation ───
+        document.getElementById('jdInput').addEventListener('input', (e) => {
+            document.getElementById('matchBtn').disabled = e.target.value.trim().length < 50;
+        });
+
+        // ─── Stage 2: Match ───
+        async function runMatch() {
+            const jd = document.getElementById('jdInput').value;
+            if (jd.trim().length < 50) return showError('JD must be at least 50 characters.');
+
+            setLoading('l2', 'matchText', true);
+            document.getElementById('matchBtn').disabled = true;
+
+            try {
+                const res = await fetch(BASE + '/api/match/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_profile: userData, jd_text: jd })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Match failed');
+                matchData = data;
+
+                renderMatch(matchData);
+                goToStep(3);
+            } catch (err) {
+                showError('Matching failed: ' + err.message);
+            } finally {
+                setLoading('l2', 'matchText', false);
+                document.getElementById('matchBtn').disabled = false;
+            }
+        }
+
+        function renderMatch(data) {
+            const score = Math.round(data.match_score);
+            const tier = score >= 80 ? 'excellent' : score >= 50 ? 'good' : 'poor';
+
+            document.getElementById('scoreNum').innerText = `${score}%`;
+            document.getElementById('scoreNum').className = 'score-num ' + tier;
+            document.getElementById('scoreBox').className = 'score-box ' + tier;
+            document.getElementById('matchLabel').innerText = data.match_label + ' Match';
+            document.getElementById('matchAnalysis').innerText = data.analysis;
+
+            document.getElementById('matchedSkills').innerHTML =
+                data.matched_skills.map(s => `<span class="skill-tag matched">${s}</span>`).join('');
+            document.getElementById('missingSkills').innerHTML =
+                data.missing_skills.map(s => `<span class="skill-tag missing">${s}</span>`).join('');
+        }
+
+        // ─── Stage 3: Email Generation ───
+        async function runEmail() {
+            const tone = document.getElementById('toneSelect').value;
+
+            setLoading('l3', 'emailText', true);
+            document.getElementById('emailBtn').disabled = true;
+
+            try {
+                const res = await fetch(BASE + '/api/generate-email/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_profile: userData,
+                        job_match: matchData,
+                        jd_text: document.getElementById('jdInput').value,
+                        tone: tone
+                    })
+                });
+                const emailData = await res.json();
+                if (!res.ok) throw new Error(emailData.detail || 'Generation failed');
+
+                document.getElementById('emailOutput').style.display = 'block';
+                document.getElementById('emailContent').innerText =
+                    `Subject: ${emailData.subject_lines[0]}\n\n${emailData.body}`;
+                document.getElementById('emailOutput').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } catch (err) {
+                showError('Email generation failed: ' + err.message);
+            } finally {
+                setLoading('l3', 'emailText', false);
+                document.getElementById('emailBtn').disabled = false;
+            }
+        }
+
+        // ─── Navigation ───
+        function goToStep(n) {
+            // Mark previous steps as "done"
+            for (let i = 1; i < n; i++) {
+                const el = document.getElementById('s' + i);
+                el.classList.remove('active');
+                el.classList.add('done');
+                el.querySelector('.step-circle').innerText = '✓';
+            }
+            // Activate current
+            document.getElementById('s' + n).classList.remove('done');
+            document.getElementById('s' + n).classList.add('active');
+            // Clear future
+            for (let i = n + 1; i <= 3; i++) {
+                document.getElementById('s' + i).classList.remove('active', 'done');
+            }
+
+            document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
+            document.getElementById('stage' + n).classList.add('active');
+        }
+
+        function copyMail() {
+            const text = document.getElementById('emailContent').innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                btn.innerText = 'Copied ✓';
+                setTimeout(() => btn.innerText = 'Copy', 2000);
+            });
+        }
+    </script>
+</body>
+</html>
