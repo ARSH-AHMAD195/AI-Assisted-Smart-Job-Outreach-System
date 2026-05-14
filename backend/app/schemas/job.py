@@ -12,3 +12,11 @@ class JobMatchResult(BaseModel):
     matched_skills: List[str]
     missing_skills: List[str]
     analysis: str
+
+class JobListing(BaseModel):
+    title: str
+    company: str
+    location: str
+    description: str
+    job_url: Optional[str] = None
+    emails: List[str] = []

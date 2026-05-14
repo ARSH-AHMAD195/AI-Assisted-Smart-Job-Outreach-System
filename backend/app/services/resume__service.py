@@ -1,4 +1,5 @@
 import re
+import json
 import spacy
 from spacy.matcher import PhraseMatcher
 from rapidfuzz import process, fuzz
@@ -196,34 +197,87 @@ def extract_experience(section_text: str) -> List[ResumeEntry]:
 def extract_projects(section_text: str) -> List[ResumeEntry]:
     return extract_structured_entries(section_text, is_project=True)
 
-def parse_resume(file_path: str) -> UserProfile:
+async def parse_resume(file_path: str) -> UserProfile:
+    """
+    Parse resume using Gemini for high-accuracy structured extraction.
+    """
+    from app.utils.ai_handler import AIHandler
+    
     raw_text = extract_text(file_path)
-    sections = get_sections(raw_text)
-    full_text_cleaned = clean_text(raw_text)
+    if not raw_text:
+        return UserProfile()
+        
+    cleaned_raw = clean_text(raw_text)
     
-    skills_raw = sections.get("SKILLS", raw_text)
-    tech_skills = hybrid_tech_extraction(skills_raw, is_soft_skills=False)
-    soft_skills = hybrid_tech_extraction(skills_raw, is_soft_skills=True)
+    system_prompt = """
+    You are an Expert Resume Parser. Extract all details from the provided resume text into a structured JSON format.
+    Ensure you capture:
+    - Personal details (name, email, phone, address, summary)
+    - Experience (list of entries with title, organization, duration, description as list of points, tech_stack as list of strings)
+    - Projects (list of entries with title, organization/context, duration, description as list of points, tech_stack as list of strings)
+    - Education (list of strings)
+    - Skills (technical) and Soft Skills
+    - Languages, Certifications, Interests
+    """
     
-    data = {
-        "name": extract_name(full_text_cleaned),
-        "email": extract_mail(full_text_cleaned),
-        "phone": extract_phone(full_text_cleaned),
-        "summary": sections.get("SUMMARY", "").strip() or None,
-        "skills": tech_skills,
-        "soft_skills": soft_skills,
-        "education": extract_education(sections.get("EDUCATION", "")),
-        "experience": extract_experience(sections.get("EXPERIENCE", "")),
-        "projects": extract_projects(sections.get("PROJECTS", "")),
-        "languages": [l.strip() for l in sections.get("LANGUAGES", "").replace(',', '\n').split('\n') if l.strip()],
-        "certifications": [line.strip() for line in sections.get("CERTIFICATIONS", "").split('\n') if len(line.strip()) > 5],
-        "interests": [i.strip() for i in sections.get("INTERESTS", "").replace(',', '\n').split('\n') if i.strip()]
-    }
+    prompt = f"""
+    Raw Resume Text:
+    {cleaned_raw[:15000]}
     
-    address_match = re.search(r'\b\d{1,5}\s(?:[A-Z][a-z]+\s)+(?:Street|Road|Ave|Avenue|Lane|City|Bhopal|India)\b', full_text_cleaned)
-    data["address"] = address_match.group(0) if address_match else None
+    Return the data as a JSON object matching this structure:
+    {{
+        "name": "string",
+        "email": "string",
+        "phone": "string",
+        "address": "string",
+        "summary": "string",
+        "experience": [{{ "title": "...", "organization": "...", "duration": "...", "description": ["...", "..."], "tech_stack": ["...", "..."] }}],
+        "projects": [{{ "title": "...", "organization": "...", "duration": "...", "description": ["...", "..."], "tech_stack": ["...", "..."] }}],
+        "skills": ["...", "..."],
+        "soft_skills": ["...", "..."],
+        "education": ["...", "..."],
+        "certifications": ["...", "..."],
+        "languages": ["...", "..."],
+        "interests": ["...", "..."]
+    }}
+    """
     
-    return UserProfile(**data)
+    try:
+        # Use Gemini for superior context handling in resumes
+        result_text = await AIHandler.generate_content(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            provider="gemini"
+        )
+        
+        # Extract JSON from text
+        if "```json" in result_text:
+            result_text = result_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in result_text:
+            result_text = result_text.split("```")[1].split("```")[0].strip()
+        
+        data = json.loads(result_text)
+        
+        # RESILIENCE: Sanitize nested entries to prevent NoneType validation errors
+        for entry_type in ["experience", "projects"]:
+            if entry_type in data and isinstance(data[entry_type], list):
+                for entry in data[entry_type]:
+                    if isinstance(entry, dict):
+                        if entry.get("title") is None: entry["title"] = "Unknown Role"
+                        if entry.get("organization") is None: entry["organization"] = "Unknown Organization"
+                        if entry.get("duration") is None: entry["duration"] = "N/A"
+                        if not isinstance(entry.get("description"), list): entry["description"] = []
+                        if not isinstance(entry.get("tech_stack"), list): entry["tech_stack"] = []
+
+        # Validate and normalize
+        return UserProfile(**data)
+    except Exception as e:
+        print(f"Resume parsing failed, falling back to basic extraction: {e}")
+        # Fallback to a very basic structure if AI fails
+        return UserProfile(
+            name="Extraction Error",
+            summary=f"Error: {str(e)}"
+        )
 
 def create_final_profile(user_profile: UserProfile) -> FinalUserProfile:
     return FinalUserProfile(

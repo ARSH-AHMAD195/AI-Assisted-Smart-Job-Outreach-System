@@ -5,9 +5,9 @@ class ResumeEntry(BaseModel):
     """
     Uniform structure for both Experience and Project entries.
     """
-    title: str = "Unknown Role"
-    organization: str = "Unknown Organization"
-    duration: str = "N/A"
+    title: Optional[str] = "Unknown Role"
+    organization: Optional[str] = "Unknown Organization"
+    duration: Optional[str] = "N/A"
     description: List[str] = Field(default_factory=list)
     tech_stack: List[str] = Field(default_factory=list)
 

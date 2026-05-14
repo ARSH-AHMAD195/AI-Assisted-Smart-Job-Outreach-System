@@ -9,3 +9,6 @@ migratetonew.md
 test_job_matcher.py
 verify_parser.py
 parserindex.html
+claude.md
+jobspy/
+.agents/
