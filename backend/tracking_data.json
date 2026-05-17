@@ -1,0 +1,15 @@
+[
+  {
+    "event_type": "Opens",
+    "email_address": "test@example.com",
+    "tracking_id": "",
+    "campaign_id": null,
+    "timestamp": "2026-05-06T12:00:00Z",
+    "received_at": "2026-05-06T12:50:57.849380+00:00",
+    "raw_data": {
+      "eventType": "Opens",
+      "emailAddress": "test@example.com",
+      "timestamp": "2026-05-06T12:00:00Z"
+    }
+  }
+]
