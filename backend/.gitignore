@@ -6,14 +6,3 @@ __pycache__/
 .idea/
 .DS_Store
 .env.example
-.env.local
-index2.html
-index3.html
-index4.html
-migratetonew.md
-test_job_matcher.py
-verify_parser.py
-parserindex.html
-claude.md
-jobspy/
-.agents/
