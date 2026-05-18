@@ -1,5 +1,49 @@
-from pydantic import BaseModel, EmailStr, field_validator, model_validator, Field
+from uuid import UUID
 from typing import List, Optional
+from pydantic import BaseModel, EmailStr, field_validator, model_validator, Field
+
+# ----------- AUTH & ACCOUNT SCHEMAS (from HEAD) -----------
+
+class UserCreate(BaseModel):
+    full_name: str = Field(..., min_length=2, max_length=100)
+    email: EmailStr
+    password: str = Field(..., min_length=6)
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
+
+class UpdateUserRequest(BaseModel):
+    full_name: str
+    linkedin_url: Optional[str] = ""
+    github_url: Optional[str] = ""
+
+
+class UserResponse(BaseModel):
+    user_id: UUID
+    full_name: str
+    email: EmailStr
+    linkedin_url: Optional[str] = None
+    github_url: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    user: UserResponse
+
+
+# ----------- PROFILE & RESUME SCHEMAS (from main) -----------
 
 class ResumeEntry(BaseModel):
     """
@@ -10,6 +54,7 @@ class ResumeEntry(BaseModel):
     duration: Optional[str] = "N/A"
     description: List[str] = Field(default_factory=list)
     tech_stack: List[str] = Field(default_factory=list)
+
 
 class UserProfile(BaseModel):
     name: Optional[str] = None
@@ -79,6 +124,7 @@ class UserProfile(BaseModel):
             bool(self.summary),
         ])
         return (filled / total_fields) * 100
+
 
 class FinalUserProfile(BaseModel):
     name: str

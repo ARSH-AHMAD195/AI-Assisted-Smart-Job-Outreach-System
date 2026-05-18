@@ -1,5 +1,22 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 import uvicorn
+from contextlib import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+import tempfile
+import os
+
+try:
+    from config import settings
+except ImportError:
+    from app.config import settings
+
+try:
+    from database.session import Base, engine
+except ImportError:
+    from app.database.session import Base, engine
+
 from app.services.resume__service import parse_resume, create_final_profile
 from app.services.job_service import calculate_match
 from app.services.email_service import EmailService
@@ -7,30 +24,33 @@ from app.schemas.user import FinalUserProfile
 from app.schemas.job import JobMatchRequest, JobMatchResult
 from app.schemas.email import EmailRequest, EmailResponse, EmailSendRequest
 from app.services.gmass_transactional_service import GMassTransactionalService
+
 from app.routers.tracking import router as tracking_router
 from app.routers.webhook import router as webhook_router
 from app.routers.jobs import router as jobs_router
 from app.routers.company import router as company_router
 from app.routers.analytics import router as analytics_router
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
-import tempfile
-import os
 
 from app.scheduler import start_scheduler, scheduler
-from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
+    print("Server Startup")
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception as e:
+        print(f"Database creation failed or skipped: {e}")
     start_scheduler()
     yield
     # Shutdown
+    print("Server Shutdown")
     scheduler.shutdown()
 
 app = FastAPI(
     title="AI-Assisted Smart Job Outreach System",
+    description=settings.PROJECT_DESCRIPTION if 'settings' in globals() and hasattr(settings, 'PROJECT_DESCRIPTION') else "AI-Assisted Smart Job Outreach System",
+    version=settings.PROJECT_VERSION if 'settings' in globals() and hasattr(settings, 'PROJECT_VERSION') else "1.0.0",
     lifespan=lifespan
 )
 
@@ -43,7 +63,24 @@ app.add_middleware(
     allow_credentials=False,
 )
 
-# Register routers
+# Import and include routers from HEAD
+try:
+    from apis import auth as auth_router
+    from apis import users as user_router
+    from apis import companies as company_router_head
+    from apis import emails as email_router_head
+except ImportError:
+    from app.apis import auth as auth_router
+    from app.apis import users as user_router
+    from app.apis import companies as company_router_head
+    from app.apis import emails as email_router_head
+
+app.include_router(auth_router.router, tags=["Authentication"])
+app.include_router(user_router.router, tags=["Users"])
+app.include_router(company_router_head.router, tags=["Companies (Legacy)"])
+app.include_router(email_router_head.router, tags=["Emails (Legacy)"])
+
+# Register routers from main
 app.include_router(tracking_router)
 app.include_router(webhook_router)
 app.include_router(jobs_router)
@@ -148,16 +185,15 @@ async def send_email(request: EmailSendRequest, db: AsyncSession = Depends(get_d
         )
         
         # 2. Extract transactional ID from result (depends on GMass response format)
-        # GMass response usually contains a "TransactionalEmailId"
         t_id = result.get("TransactionalEmailId") or result.get("transactionalEmailId")
         
         # 3. Store in DB
         outreach = OutreachEmail(
-            transactional_id=str(t_id),
+            transactional_id=str(t_id) if t_id else None,
             recipient_email=request.recipient_email,
             subject=request.subject,
             body=request.body,
-            strategy="N/A", # Should be passed from frontend if possible
+            strategy="N/A",
             status="SENT"
         )
         db.add(outreach)

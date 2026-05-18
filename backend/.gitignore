@@ -1,7 +1,12 @@
 venv/
 .env
-.env.local
 __pycache__/
+*.pyc
+.vscode/
+.idea/
+.DS_Store
+.env.example
+.env.local
 index2.html
 index3.html
 index4.html
