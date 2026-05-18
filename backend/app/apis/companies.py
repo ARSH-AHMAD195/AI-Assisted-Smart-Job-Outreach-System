@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from database.session import get_db
-from schemas.company import CompanyCreate, CompanyResponse, CompanyUpdate
-from services import company_service
+from app.database.session import get_db
+from app.schemas.company import CompanyCreate, CompanyResponse, CompanyUpdate
+from app.services import company_service
 
 router = APIRouter(prefix="/company")
 

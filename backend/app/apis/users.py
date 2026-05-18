@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import select, update
-from schemas.user import UserResponse, UpdateUserRequest
-from database.session import get_db
-from models.user import User
-from dependencies import get_current_user
+from app.schemas.user import UserResponse, UpdateUserRequest
+from app.database.session import get_db
+from app.models.user import User
+from app.dependencies import get_current_user
 
 router = APIRouter(
     prefix="/users"

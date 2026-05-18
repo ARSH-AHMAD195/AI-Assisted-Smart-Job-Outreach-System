@@ -2,7 +2,10 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, DeclarativeBase, Session
 import logging
 
-from config import settings
+try:
+    from config import settings
+except ImportError:
+    from app.config import settings
 
 
 # ----------- LOGGER & BASE INITIALIZATION -----------

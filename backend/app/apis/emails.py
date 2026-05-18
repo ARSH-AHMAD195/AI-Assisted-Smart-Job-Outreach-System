@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from database.session import get_db
-from dependencies import get_current_user
+from app.database.session import get_db
+from app.dependencies import get_current_user
 
-from services import email_service
+from app.services import email_service
 
-from schemas.email import (
+from app.schemas.email import (
     EmailGenerateRequest,
     EmailResponse,
     ApproveEmailRequest

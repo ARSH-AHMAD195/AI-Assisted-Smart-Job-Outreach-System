@@ -14,7 +14,7 @@ from sqlalchemy.dialects.postgresql import UUID
 
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
-from database.session import Base
+from app.database.session import Base
 from datetime import datetime
 
 class Email(Base):

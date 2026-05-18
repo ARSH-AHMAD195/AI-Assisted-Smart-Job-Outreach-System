@@ -6,7 +6,7 @@ load_dotenv()
 
 # Fetch variables
 
-DATABASE_URL = os.getenv("DATABASE_URL","")
+DATABASE_URL = os.getenv("DATABASE_URL","sqlite:///job_outreach.db")
 
 
 class Setting:

@@ -2,16 +2,16 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 from fastapi import HTTPException, status
 
-from models.user import User
-from schemas.user import UserCreate
-from core.security import (
+from app.models.user import User
+from app.schemas.user import UserCreate
+from app.core.security import (
     hash_password,
     verify_password,
     create_access_token,
     create_refresh_token,
     decode_token,
 )
-from config import settings
+from app.config import settings
 
 
 def register_user(db: Session, payload: UserCreate):

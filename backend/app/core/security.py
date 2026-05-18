@@ -5,7 +5,7 @@ from jose import JWTError, jwt
 from pydantic import BaseModel
 
 from pwdlib import PasswordHash
-from config import settings
+from app.config import settings
 
 
 # ----------- PASSWORD HASHING (ARGON2) -----------
