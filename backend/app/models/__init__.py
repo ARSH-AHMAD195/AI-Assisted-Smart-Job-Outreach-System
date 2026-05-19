@@ -1,15 +1,26 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, Float, ForeignKey, JSON
+from sqlalchemy import Column, Integer, String, Text, DateTime, Float, ForeignKey, JSON, Boolean
 from sqlalchemy.orm import relationship
 from app.database import Base
 from datetime import datetime
 
+import uuid
+
 class User(Base):
     __tablename__ = "users"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
+    user_id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    full_name = Column(String, index=True)
     email = Column(String, unique=True, index=True)
-    profile_data = Column(JSON)  # Stores the full FinalUserProfile
+    password_hash = Column(String)
+    is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    linkedin_url = Column(String, default="")
+    github_url = Column(String, default="")
+    profile_data = Column(JSON, nullable=True)
+
+    @property
+    def id(self):
+        return self.user_id
 
 class JobListing(Base):
     __tablename__ = "job_listings"
@@ -45,7 +56,7 @@ class OutreachEmail(Base):
     strategy = Column(String)
     status = Column(String, default="SENT")  # SENT, OPENED, REPLIED, BOUNCED
     job_id = Column(Integer, ForeignKey("job_listings.id"))
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(String, ForeignKey("users.user_id"))
     sent_at = Column(DateTime, default=datetime.utcnow)
 
 class TrackingEvent(Base):

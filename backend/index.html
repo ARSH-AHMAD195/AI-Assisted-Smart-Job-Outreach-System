@@ -73,7 +73,8 @@
         .log-msg.action { color: #6366f1; border-left-color: #6366f1; }
 
         /* Header Area */
-        header { text-align: left; margin-bottom: 4rem; }
+        header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4rem; }
+        @media (max-width: 768px) { header { flex-direction: column; gap: 1.5rem; } }
         .logo-tag { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.2rem; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 100px; color: var(--primary-light); font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 2rem; }
 
         /* Stepper */
@@ -221,18 +222,190 @@
             .card { padding: 2rem; }
             .tracking-stats { grid-template-columns: 1fr 1fr; }
         }
+
+        /* Auth Screen and Form Elements */
+        .auth-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(1, 4, 9, 0.85);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.4s ease-out;
+        }
+        .auth-card {
+            background: rgba(13, 17, 23, 0.4);
+            border: 1px solid var(--border);
+            border-radius: 32px;
+            padding: 3rem;
+            max-width: 460px;
+            width: 90%;
+            box-shadow: 0 50px 100px -20px rgba(0, 0, 0, 0.7);
+            position: relative;
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+        }
+        .auth-tabs {
+            display: flex;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 4px;
+            margin-bottom: 2rem;
+        }
+        .auth-tab {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: none;
+            background: transparent;
+            color: var(--text-dim);
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+        .auth-tab.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1.25rem;
+            text-align: left;
+        }
+        .input-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .form-input {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            color: white;
+            outline: none;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+        .form-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.15);
+            background: rgba(0, 0, 0, 0.6);
+        }
+        .user-widget {
+            display: none;
+            align-items: center;
+            gap: 1rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            padding: 0.75rem 1.25rem;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .user-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent-purple) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 0.95rem;
+            color: white;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
     </style>
 </head>
 <body>
-    <div class="container">
+    <!-- Auth Overlay -->
+    <div class="auth-overlay" id="authOverlay" style="display: flex;">
+        <div class="auth-card">
+            <div class="logo-tag" style="margin-bottom: 1.5rem; justify-content: center; width: max-content; margin-inline: auto;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+                Secure Portal
+            </div>
+            <h2 id="authTitle" style="text-align: center; margin-bottom: 0.5rem; background: linear-gradient(135deg, #fff 40%, #a5b4fc 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">Sign In to Outreach AI</h2>
+            <p id="authSubtitle" style="text-align: center; color: var(--text-dim); margin-bottom: 2rem; font-size: 0.9rem;">Access autonomous job discovery & outreach</p>
+            
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Sign In</button>
+                <button class="auth-tab" id="tabSignup" onclick="switchAuthTab('signup')">Create Account</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="input-group">
+                    <label class="input-label" for="loginEmail">Email Address</label>
+                    <input class="form-input" type="email" id="loginEmail" required placeholder="name@domain.com">
+                </div>
+                <div class="input-group">
+                    <label class="input-label" for="loginPassword">Password</label>
+                    <input class="form-input" type="password" id="loginPassword" required placeholder="••••••••">
+                </div>
+                <button class="btn btn-primary" type="submit" style="margin-top: 1.5rem; flex-direction: row; gap: 0.5rem;">
+                    <span id="loginText">Sign In</span>
+                    <div class="loader" id="loginLoader"></div>
+                </button>
+            </form>
+
+            <!-- Signup Form -->
+            <form id="signupForm" onsubmit="handleSignup(event)" style="display: none;">
+                <div class="input-group">
+                    <label class="input-label" for="signupName">Full Name</label>
+                    <input class="form-input" type="text" id="signupName" required placeholder="John Doe">
+                </div>
+                <div class="input-group">
+                    <label class="input-label" for="signupEmail">Email Address</label>
+                    <input class="form-input" type="email" id="signupEmail" required placeholder="name@domain.com">
+                </div>
+                <div class="input-group">
+                    <label class="input-label" for="signupPassword">Password</label>
+                    <input class="form-input" type="password" id="signupPassword" required minlength="6" placeholder="At least 6 characters">
+                </div>
+                <button class="btn btn-primary" type="submit" style="margin-top: 1.5rem; flex-direction: row; gap: 0.5rem;">
+                    <span id="signupText">Create Account</span>
+                    <div class="loader" id="signupLoader"></div>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="container" style="display: none;">
         <div class="main-content">
             <header>
-                <div class="logo-tag">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
-                    Intelligence Pipeline
+                <div>
+                    <div class="logo-tag">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+                        Intelligence Pipeline
+                    </div>
+                    <h1>Outreach AI</h1>
+                    <p class="subtitle">Autonomous Job Discovery & Precision Outreach</p>
                 </div>
-                <h1>Outreach AI</h1>
-                <p class="subtitle">Autonomous Job Discovery & Precision Outreach</p>
+
+                <!-- Logged In User Profile Widget -->
+                <div class="user-widget" id="userWidget">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div style="text-align: left;">
+                        <div id="userWidgetName" style="font-weight: 700; font-size: 0.9rem; color: var(--text);">User</div>
+                        <div id="userWidgetEmail" style="font-size: 0.7rem; color: var(--text-dim); margin-top: 0.1rem;">user@domain.com</div>
+                    </div>
+                    <button class="btn" onclick="handleLogout()" style="width: auto; padding: 0.5rem 0.85rem; font-size: 0.75rem; background: rgba(248, 113, 113, 0.1); border: 1px solid rgba(248, 113, 113, 0.2); color: var(--accent-red); border-radius: 10px; cursor: pointer; transition: 0.2s;">
+                        Sign Out
+                    </button>
+                </div>
             </header>
 
         <!-- Stepper -->
@@ -472,6 +645,255 @@
         let companyIntel = null;
         let history = JSON.parse(localStorage.getItem('outreach_history') || '[]');
 
+        // ─── Authentication state & handlers ───
+        function switchAuthTab(tab) {
+            const tabLogin = document.getElementById('tabLogin');
+            const tabSignup = document.getElementById('tabSignup');
+            const loginForm = document.getElementById('loginForm');
+            const signupForm = document.getElementById('signupForm');
+            const authTitle = document.getElementById('authTitle');
+            const authSubtitle = document.getElementById('authSubtitle');
+
+            if (tab === 'login') {
+                tabLogin.classList.add('active');
+                tabSignup.classList.remove('active');
+                loginForm.style.display = 'block';
+                signupForm.style.display = 'none';
+                authTitle.innerText = 'Sign In to Outreach AI';
+                authSubtitle.innerText = 'Access autonomous job discovery & outreach';
+            } else {
+                tabSignup.classList.add('active');
+                tabLogin.classList.remove('active');
+                signupForm.style.display = 'block';
+                loginForm.style.display = 'none';
+                authTitle.innerText = 'Create Account';
+                authSubtitle.innerText = 'Set up your credentials to get started';
+            }
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            setLoading('loginLoader', 'loginText', true);
+
+            try {
+                const params = new URLSearchParams();
+                params.append('username', email);
+                params.append('password', password);
+
+                const res = await fetch(BASE + '/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: params
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Login failed');
+
+                // Save session
+                localStorage.setItem('access_token', data.access_token);
+                localStorage.setItem('refresh_token', data.refresh_token);
+                localStorage.setItem('current_user', JSON.stringify(data.user));
+
+                addLog(`User logged in: ${data.user.full_name}`, "success");
+                
+                // Clear inputs
+                document.getElementById('loginEmail').value = '';
+                document.getElementById('loginPassword').value = '';
+
+                await checkAuthStatus();
+                loadState();
+                addLog("Session active. Unified dashboard ready.", "info");
+                renderDashboard();
+                if (history.length > 0) refreshAnalytics();
+            } catch (err) {
+                addLog(`Login failed: ${err.message}`, "error");
+                showError('Login failed: ' + err.message);
+            } finally {
+                setLoading('loginLoader', 'loginText', false);
+            }
+        }
+
+        async function handleSignup(e) {
+            e.preventDefault();
+            const fullName = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+
+            setLoading('signupLoader', 'signupText', true);
+
+            try {
+                const res = await fetch(BASE + '/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        full_name: fullName,
+                        email: email,
+                        password: password
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Registration failed');
+
+                // Save session
+                localStorage.setItem('access_token', data.access_token);
+                localStorage.setItem('refresh_token', data.refresh_token);
+                localStorage.setItem('current_user', JSON.stringify(data.user));
+
+                addLog(`User registered & logged in: ${data.user.full_name}`, "success");
+
+                // Clear inputs
+                document.getElementById('signupName').value = '';
+                document.getElementById('signupEmail').value = '';
+                document.getElementById('signupPassword').value = '';
+
+                await checkAuthStatus();
+                loadState();
+                addLog("Session active. Unified dashboard ready.", "info");
+                renderDashboard();
+                if (history.length > 0) refreshAnalytics();
+            } catch (err) {
+                addLog(`Registration failed: ${err.message}`, "error");
+                showError('Registration failed: ' + err.message);
+            } finally {
+                setLoading('signupLoader', 'signupText', false);
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            localStorage.removeItem('current_user');
+            localStorage.removeItem('current_step');
+            localStorage.removeItem('user_data');
+            localStorage.removeItem('match_data');
+            localStorage.removeItem('company_intel');
+            
+            userData = null;
+            matchData = null;
+            companyIntel = null;
+            currentStep = 1;
+
+            addLog("User logged out. Session terminated.", "info");
+            checkAuthStatus();
+        }
+
+        async function checkAuthStatus() {
+            const token = localStorage.getItem('access_token');
+            const userStr = localStorage.getItem('current_user');
+            const authOverlay = document.getElementById('authOverlay');
+            const container = document.querySelector('.container');
+            const userWidget = document.getElementById('userWidget');
+
+            if (!token || !userStr) {
+                authOverlay.style.display = 'flex';
+                container.style.display = 'none';
+                userWidget.style.display = 'none';
+                return;
+            }
+
+            // Populate widget
+            const user = JSON.parse(userStr);
+            document.getElementById('userWidgetName').innerText = user.full_name.toUpperCase();
+            document.getElementById('userWidgetEmail').innerText = user.email;
+            
+            // Avatar Initials
+            const initials = user.full_name
+                .split(' ')
+                .map(n => n[0])
+                .join('')
+                .toUpperCase()
+                .slice(0, 2);
+            document.getElementById('userAvatar').innerText = initials || 'U';
+
+            // Hide auth and show app dashboard
+            authOverlay.style.display = 'none';
+            container.style.display = 'grid';
+            userWidget.style.display = 'flex';
+
+            // Verify token is still good
+            try {
+                const verifyRes = await fetch(BASE + '/users/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (verifyRes.status === 401) {
+                    addLog("Access token expired. Refreshing session...", "action");
+                    const refreshed = await attemptTokenRefresh();
+                    if (!refreshed) {
+                        handleLogout();
+                    } else {
+                        await checkAuthStatus();
+                    }
+                } else if (verifyRes.ok) {
+                    const latestUser = await verifyRes.json();
+                    localStorage.setItem('current_user', JSON.stringify(latestUser));
+                    document.getElementById('userWidgetName').innerText = latestUser.full_name.toUpperCase();
+                    document.getElementById('userWidgetEmail').innerText = latestUser.email;
+                }
+            } catch (err) {
+                console.warn("Failed to reach users/me to verify token, continuing with cached session.", err);
+            }
+        }
+
+        async function attemptTokenRefresh() {
+            const rt = localStorage.getItem('refresh_token');
+            if (!rt) return false;
+            try {
+                const res = await fetch(BASE + '/auth/refresh', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refresh_token: rt })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    localStorage.setItem('access_token', data.access_token);
+                    localStorage.setItem('refresh_token', data.refresh_token);
+                    localStorage.setItem('current_user', JSON.stringify(data.user));
+                    return true;
+                }
+            } catch (err) {
+                console.error("Token refresh failed:", err);
+            }
+            return false;
+        }
+
+        // ─── Stateful Transparent API Fetch Wrapper ───
+        async function authFetch(url, options = {}) {
+            let token = localStorage.getItem('access_token');
+            
+            // Set headers if not already set
+            options.headers = options.headers || {};
+            if (token) {
+                options.headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            try {
+                let res = await fetch(url, options);
+                
+                // If 401 Unauthorized, try to refresh token
+                if (res.status === 401 && localStorage.getItem('refresh_token')) {
+                    addLog("Access token expired. Attempting secure token refresh...", "action");
+                    const success = await attemptTokenRefresh();
+                    if (success) {
+                        // Retry with new token
+                        token = localStorage.getItem('access_token');
+                        options.headers['Authorization'] = `Bearer ${token}`;
+                        addLog("Token refresh successful. Retrying last request...", "success");
+                        res = await fetch(url, options);
+                    } else {
+                        addLog("Session expired. Please log in again.", "error");
+                        handleLogout();
+                        throw new Error("Session expired. Please log in again.");
+                    }
+                }
+                return res;
+            } catch (err) {
+                console.error("Fetch error in authFetch:", err);
+                throw err;
+            }
+        }
+
         function addLog(msg, type = 'info') {
             const container = document.getElementById('logEntries');
             if (!container) return;
@@ -526,11 +948,14 @@
             goToStep(currentStep, false); // false to avoid redundant analytics refresh if not at step 4
         }
 
-        window.addEventListener('load', () => {
-            loadState();
-            addLog("System ready. Resume your session or upload a new profile.", "info");
-            renderDashboard();
-            if (history.length > 0) refreshAnalytics();
+        window.addEventListener('load', async () => {
+            await checkAuthStatus();
+            if (localStorage.getItem('access_token')) {
+                loadState();
+                addLog("System ready. Session active.", "info");
+                renderDashboard();
+                if (history.length > 0) refreshAnalytics();
+            }
         });
 
         // ─── Stage 1: Resume Upload & Role Inference ───
@@ -548,7 +973,7 @@
                 // 1. Upload & Parse Resume
                 addLog("Parsing document structure and extracting skills...", "info");
                 document.getElementById('uploadTitle').innerText = 'Parsing Resume...';
-                const res = await fetch(BASE + '/api/uploadfile/', { method: 'POST', body: formData });
+                const res = await authFetch(BASE + '/api/uploadfile/', { method: 'POST', body: formData });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.detail || 'Upload failed');
                 userData = data;
@@ -562,7 +987,7 @@
                 
                 // 2. Infer Roles
                 addLog("Executing AI role inference based on skill matrix...", "info");
-                const inferRes = await fetch(BASE + '/api/jobs/infer-roles', {
+                const inferRes = await authFetch(BASE + '/api/jobs/infer-roles', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(userData)
@@ -616,7 +1041,7 @@
             
             try {
                 addLog(`Querying multi-portal discovery engine...`, "info");
-                const res = await fetch(BASE + `/api/jobs/discover?role=${encodeURIComponent(role)}`);
+                const res = await authFetch(BASE + `/api/jobs/discover?role=${encodeURIComponent(role)}`);
                 const jobs = await res.json();
                 
                 if (!res.ok) throw new Error(jobs.detail || 'Discovery failed');
@@ -717,7 +1142,7 @@
             setLoading('l3', 'emailText', true);
 
             try {
-                const res = await fetch(BASE + '/api/match/', {
+                const res = await authFetch(BASE + '/api/match/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ user_profile: userData, jd_text: jd })
@@ -766,7 +1191,7 @@
             btn.innerText = 'Gathering...';
 
             try {
-                const res = await fetch(BASE + `/api/company/enrich?name=${encodeURIComponent(companyName)}&url=${encodeURIComponent(url)}`);
+                const res = await authFetch(BASE + `/api/company/enrich?name=${encodeURIComponent(companyName)}&url=${encodeURIComponent(url)}`);
                 const data = await res.json();
                 
                 if (data && data.tech_stack && data.tech_stack.length > 0) {
@@ -823,7 +1248,7 @@
                     payload.company_intel = companyIntel;
                 }
 
-                const res = await fetch(BASE + '/api/generate-email/', {
+                const res = await authFetch(BASE + '/api/generate-email/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -850,7 +1275,7 @@
         // ─── Stage 4: Analytics ───
         async function refreshAnalytics() {
             try {
-                const res = await fetch(BASE + '/api/analytics/summary');
+                const res = await authFetch(BASE + '/api/analytics/summary');
                 const data = await res.json();
                 
                 document.getElementById('statSent').textContent = data.total_sent;
@@ -941,7 +1366,7 @@
             setLoading('l4', 'sendText', true);
             addLog(`Initiating secure outreach to ${recipient}...`, "action");
             try {
-                const res = await fetch(BASE + '/api/send-email/', {
+                const res = await authFetch(BASE + '/api/send-email/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ recipient_email: recipient, subject, body: bodyClean, sender_email: "om@example.com" })

@@ -4,15 +4,41 @@ from typing import Optional
 import os
 import json
 import logging
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
 class IntelligenceService:
     @staticmethod
-    async def enrich_company(company_name: str, website_url: Optional[str] = None) -> Optional[dict]:
+    async def enrich_company(db: AsyncSession, company_name: str, website_url: Optional[str] = None) -> Optional[dict]:
         """
-        Enrich company profile by scraping their website and using LLM for summary.
+        Enrich company profile by checking database first (caching layer), 
+        then scraping website and using LLM if not found.
         """
+        # 1. Check DB Cache
+        try:
+            query = select(CompanyProfile).where(CompanyProfile.name.ilike(company_name))
+            if website_url:
+                clean_url = website_url.replace("https://", "").replace("http://", "").replace("www.", "").split("/")[0]
+                query = select(CompanyProfile).where(
+                    (CompanyProfile.name.ilike(company_name)) | 
+                    (CompanyProfile.website.ilike(f"%{clean_url}%"))
+                )
+            res = await db.execute(query)
+            cached = res.scalars().first()
+            if cached:
+                logger.info(f"Database Cache HIT for company: {company_name}")
+                return {
+                    "vision": cached.vision,
+                    "products": cached.products or [],
+                    "tech_stack": cached.tech_stack or [],
+                    "engineering_culture": cached.engineering_culture
+                }
+        except Exception as e:
+            logger.warning(f"Error checking cache: {e}")
+
+        logger.info(f"Database Cache MISS for company: {company_name}. Crawling...")
         if not website_url:
             # Default to .com if no URL is provided
             clean_name = "".join(filter(str.isalnum, company_name.lower()))
@@ -82,6 +108,22 @@ class IntelligenceService:
                 intel["products"] = [s.strip() for s in intel["products"].split(",")]
             elif not isinstance(intel.get("products"), list):
                 intel["products"] = []
+
+            # Save newly crawled intel to the database for future caching
+            try:
+                new_profile = CompanyProfile(
+                    name=company_name,
+                    website=website_url,
+                    vision=intel.get("vision", ""),
+                    products=intel.get("products", []),
+                    tech_stack=intel.get("tech_stack", []),
+                    engineering_culture=intel.get("engineering_culture", "")
+                )
+                db.add(new_profile)
+                await db.commit()
+                logger.info(f"Successfully saved newly enriched company to database: {company_name}")
+            except Exception as dbe:
+                logger.warning(f"Failed to persist newly crawled company profile: {dbe}")
 
             return intel
         except Exception as e:

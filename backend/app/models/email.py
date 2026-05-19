@@ -10,8 +10,6 @@ from sqlalchemy import (
 
 from sqlalchemy.sql import func
 
-from sqlalchemy.dialects.postgresql import UUID
-
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from app.database.session import Base
@@ -26,7 +24,8 @@ class Email(Base):
         default=str
     )
 
-    user_id: Mapped[uuid.UUID] = mapped_column(
+    user_id: Mapped[str] = mapped_column(
+        String,
         ForeignKey("users.user_id"),
         nullable=False
     )

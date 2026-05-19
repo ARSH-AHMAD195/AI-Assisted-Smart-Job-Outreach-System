@@ -167,13 +167,14 @@ async def generate_email(request: EmailRequest):
 
 from app.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from app.models import OutreachEmail, User, JobListing
 from fastapi import Depends
 
 @app.post("/api/send-email/")
 async def send_email(request: EmailSendRequest, db: AsyncSession = Depends(get_db)):
     """
-    Send an email via GMass Transactional API and store in database.
+    Send an email via GMass Transactional API and store in database with user/job relations.
     """
     try:
         # 1. Send the email
@@ -187,14 +188,41 @@ async def send_email(request: EmailSendRequest, db: AsyncSession = Depends(get_d
         # 2. Extract transactional ID from result (depends on GMass response format)
         t_id = result.get("TransactionalEmailId") or result.get("transactionalEmailId")
         
-        # 3. Store in DB
+        # 3. Look up user_id from database
+        user_id = None
+        if request.sender_email:
+            user_res = await db.execute(select(User).where(User.email == request.sender_email))
+            user = user_res.scalars().first()
+            if user:
+                user_id = user.id
+        if not user_id:
+            user_res = await db.execute(select(User).limit(1))
+            user = user_res.scalars().first()
+            if user:
+                user_id = user.id
+
+        # 4. Look up job_id from database based on recipient email domain
+        job_id = None
+        if "@" in request.recipient_email:
+            domain = request.recipient_email.split("@")[-1]
+            job_res = await db.execute(select(JobListing).where(
+                (JobListing.job_url.like(f"%{domain}%")) |
+                (JobListing.description.like(f"%{domain}%"))
+            ).limit(1))
+            job = job_res.scalars().first()
+            if job:
+                job_id = job.id
+
+        # 5. Store in DB with proper associations
         outreach = OutreachEmail(
             transactional_id=str(t_id) if t_id else None,
             recipient_email=request.recipient_email,
             subject=request.subject,
             body=request.body,
             strategy="N/A",
-            status="SENT"
+            status="SENT",
+            user_id=user_id,
+            job_id=job_id
         )
         db.add(outreach)
         await db.commit()

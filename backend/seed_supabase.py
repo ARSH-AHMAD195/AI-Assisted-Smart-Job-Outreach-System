@@ -1,27 +1,56 @@
 import asyncio
+import os
+from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from app.database import Base
 from app.models import User, JobListing, CompanyProfile, OutreachEmail, TrackingEvent
-from datetime import datetime, timedelta
+from datetime import datetime
 
-# Explicitly target local SQLite database as requested by the user
-LOCAL_DB_URL = "sqlite+aiosqlite:///./job_outreach.db"
-local_engine = create_async_engine(LOCAL_DB_URL, echo=True)
-LocalAsyncSessionLocal = sessionmaker(
-    local_engine, class_=AsyncSession, expire_on_commit=False
+# Load environment variables
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL is not set in environment!")
+
+connect_args = {}
+if DATABASE_URL.startswith("postgresql"):
+    connect_args = {
+        "prepared_statement_cache_size": 0,
+        "statement_cache_size": 0
+    }
+    if DATABASE_URL.startswith("postgresql://"):
+        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+print(f"Connecting to remote database: {DATABASE_URL.split('@')[-1]}")
+
+engine = create_async_engine(DATABASE_URL, connect_args=connect_args, echo=True)
+AsyncSessionLocal = sessionmaker(
+    engine, class_=AsyncSession, expire_on_commit=False
 )
 
-async def seed_data():
-    async with LocalAsyncSessionLocal() as db:
-        # 1. Clear existing data on local SQLite database
-        async with local_engine.begin() as conn:
-            await conn.run_sync(Base.metadata.drop_all)
-            await conn.run_sync(Base.metadata.create_all)
+from sqlalchemy import text
 
-        print("Seeding database...")
+async def seed_supabase():
+    print("=== STARTING SUPABASE DATABASE MIGRATION & SEEDING ===")
+    
+    # 1. Create tables on Supabase if they do not exist
+    async with engine.begin() as conn:
+        print("Setting search path to public schema...")
+        await conn.execute(text("SET search_path TO public"))
+        print("Creating tables on remote Supabase instance if they don't exist...")
+        await conn.run_sync(Base.metadata.create_all)
+        print("✓ Tables verified/created successfully.")
 
-        # 2. Seed Users
+    # 2. Seed data
+    async with AsyncSessionLocal() as db:
+        print("\nSeeding Supabase data...")
+
+        # Clear old seeded data first if necessary, or check before insert
+        # We will add default records with fallback checks
+        
+        # User seed
         user = User(
             name="Om Anand",
             email="om@example.com",
@@ -42,7 +71,7 @@ async def seed_data():
         )
         db.add(user)
 
-        # 3. Seed Job Listings
+        # Job Listings seed
         jobs = [
             JobListing(
                 title="Senior Backend Engineer",
@@ -72,7 +101,7 @@ async def seed_data():
         for job in jobs:
             db.add(job)
 
-        # 4. Seed Company Profiles
+        # Company Profiles seed
         companies = [
             CompanyProfile(
                 name="Google",
@@ -92,7 +121,7 @@ async def seed_data():
         for company in companies:
             db.add(company)
 
-        # 5. Seed Outreach Emails
+        # Outreach Emails seed
         outreach1 = OutreachEmail(
             transactional_id="t_12345",
             recipient_email="hiring@google.com",
@@ -121,7 +150,7 @@ async def seed_data():
         db.add(outreach2)
         db.add(outreach3)
 
-        # 6. Seed Tracking Events
+        # Tracking Events seed
         events = [
             TrackingEvent(
                 transactional_id="t_12345",
@@ -142,8 +171,12 @@ async def seed_data():
         for event in events:
             db.add(event)
 
-        await db.commit()
-        print("Database seeded successfully!")
+        try:
+            await db.commit()
+            print("✓ Supabase database seeded successfully!")
+        except Exception as e:
+            print(f"Error seeding Supabase: {e}")
+            await db.rollback()
 
 if __name__ == "__main__":
-    asyncio.run(seed_data())
+    asyncio.run(seed_supabase())

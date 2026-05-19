@@ -1,0 +1,189 @@
+=== STARTING DIRECT SUPABASE SCHEMA CREATION & SEEDING ===
+Ensuring 'profile_data' column exists on 'users' table...
+2026-05-18 09:44:34,208 INFO sqlalchemy.engine.Engine select pg_catalog.version()
+2026-05-18 09:44:34,208 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-05-18 09:44:34,270 INFO sqlalchemy.engine.Engine select current_schema()
+2026-05-18 09:44:34,270 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-05-18 09:44:34,354 INFO sqlalchemy.engine.Engine show standard_conforming_strings
+2026-05-18 09:44:34,354 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-05-18 09:44:34,416 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-05-18 09:44:34,417 INFO sqlalchemy.engine.Engine SET search_path TO public
+2026-05-18 09:44:34,417 INFO sqlalchemy.engine.Engine [generated in 0.00013s] ()
+2026-05-18 09:44:34,481 INFO sqlalchemy.engine.Engine ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_data JSON
+2026-05-18 09:44:34,481 INFO sqlalchemy.engine.Engine [generated in 0.00014s] ()
+2026-05-18 09:44:34,527 INFO sqlalchemy.engine.Engine COMMIT
+✓ Altered 'users' table or column already exists.
+Creating table 'users'...
+2026-05-18 09:44:34,549 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-05-18 09:44:34,550 INFO sqlalchemy.engine.Engine SET search_path TO public
+2026-05-18 09:44:34,550 INFO sqlalchemy.engine.Engine [cached since 0.1329s ago] ()
+2026-05-18 09:44:34,612 INFO sqlalchemy.engine.Engine 
+CREATE TABLE users (
+	user_id VARCHAR NOT NULL, 
+	full_name VARCHAR, 
+	email VARCHAR, 
+	password_hash VARCHAR, 
+	is_active BOOLEAN, 
+	created_at TIMESTAMP WITHOUT TIME ZONE, 
+	updated_at TIMESTAMP WITHOUT TIME ZONE, 
+	linkedin_url VARCHAR, 
+	github_url VARCHAR, 
+	profile_data JSON, 
+	PRIMARY KEY (user_id)
+)
+
+
+2026-05-18 09:44:34,612 INFO sqlalchemy.engine.Engine [no key 0.00012s] ()
+2026-05-18 09:44:34,655 INFO sqlalchemy.engine.Engine ROLLBACK
+✓ Table 'users' already exists (skipping creation).
+Creating table 'job_listings'...
+2026-05-18 09:44:34,675 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-05-18 09:44:34,675 INFO sqlalchemy.engine.Engine SET search_path TO public
+2026-05-18 09:44:34,676 INFO sqlalchemy.engine.Engine [cached since 0.2589s ago] ()
+2026-05-18 09:44:34,736 INFO sqlalchemy.engine.Engine 
+CREATE TABLE job_listings (
+	id SERIAL NOT NULL, 
+	title VARCHAR, 
+	company_name VARCHAR, 
+	location VARCHAR, 
+	description TEXT, 
+	tech_stack JSON, 
+	job_url VARCHAR, 
+	source VARCHAR, 
+	created_at TIMESTAMP WITHOUT TIME ZONE, 
+	PRIMARY KEY (id), 
+	UNIQUE (job_url)
+)
+
+
+2026-05-18 09:44:34,736 INFO sqlalchemy.engine.Engine [no key 0.00012s] ()
+2026-05-18 09:44:34,783 INFO sqlalchemy.engine.Engine CREATE INDEX ix_job_listings_company_name ON job_listings (company_name)
+2026-05-18 09:44:34,783 INFO sqlalchemy.engine.Engine [no key 0.00011s] ()
+2026-05-18 09:44:34,825 INFO sqlalchemy.engine.Engine CREATE INDEX ix_job_listings_title ON job_listings (title)
+2026-05-18 09:44:34,825 INFO sqlalchemy.engine.Engine [no key 0.00010s] ()
+2026-05-18 09:44:34,868 INFO sqlalchemy.engine.Engine CREATE INDEX ix_job_listings_id ON job_listings (id)
+2026-05-18 09:44:34,868 INFO sqlalchemy.engine.Engine [no key 0.00017s] ()
+2026-05-18 09:44:34,912 INFO sqlalchemy.engine.Engine COMMIT
+✓ Table 'job_listings' created successfully.
+Creating table 'company_profiles'...
+2026-05-18 09:44:34,934 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-05-18 09:44:34,934 INFO sqlalchemy.engine.Engine SET search_path TO public
+2026-05-18 09:44:34,934 INFO sqlalchemy.engine.Engine [cached since 0.5174s ago] ()
+2026-05-18 09:44:34,996 INFO sqlalchemy.engine.Engine 
+CREATE TABLE company_profiles (
+	id SERIAL NOT NULL, 
+	name VARCHAR, 
+	website VARCHAR, 
+	vision TEXT, 
+	products JSON, 
+	tech_stack JSON, 
+	engineering_culture TEXT, 
+	careers_email VARCHAR, 
+	last_enriched TIMESTAMP WITHOUT TIME ZONE, 
+	PRIMARY KEY (id)
+)
+
+
+2026-05-18 09:44:34,996 INFO sqlalchemy.engine.Engine [no key 0.00011s] ()
+2026-05-18 09:44:35,039 INFO sqlalchemy.engine.Engine CREATE INDEX ix_company_profiles_id ON company_profiles (id)
+2026-05-18 09:44:35,039 INFO sqlalchemy.engine.Engine [no key 0.00011s] ()
+2026-05-18 09:44:35,080 INFO sqlalchemy.engine.Engine CREATE UNIQUE INDEX ix_company_profiles_name ON company_profiles (name)
+2026-05-18 09:44:35,080 INFO sqlalchemy.engine.Engine [no key 0.00010s] ()
+2026-05-18 09:44:35,120 INFO sqlalchemy.engine.Engine COMMIT
+✓ Table 'company_profiles' created successfully.
+Creating table 'outreach_emails'...
+2026-05-18 09:44:35,141 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-05-18 09:44:35,141 INFO sqlalchemy.engine.Engine SET search_path TO public
+2026-05-18 09:44:35,141 INFO sqlalchemy.engine.Engine [cached since 0.7245s ago] ()
+2026-05-18 09:44:35,201 INFO sqlalchemy.engine.Engine 
+CREATE TABLE outreach_emails (
+	id SERIAL NOT NULL, 
+	transactional_id VARCHAR, 
+	recipient_email VARCHAR, 
+	subject VARCHAR, 
+	body TEXT, 
+	strategy VARCHAR, 
+	status VARCHAR, 
+	job_id INTEGER, 
+	user_id VARCHAR, 
+	sent_at TIMESTAMP WITHOUT TIME ZONE, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(job_id) REFERENCES job_listings (id), 
+	FOREIGN KEY(user_id) REFERENCES users (user_id)
+)
+
+
+2026-05-18 09:44:35,201 INFO sqlalchemy.engine.Engine [no key 0.00011s] ()
+2026-05-18 09:44:35,244 INFO sqlalchemy.engine.Engine CREATE INDEX ix_outreach_emails_recipient_email ON outreach_emails (recipient_email)
+2026-05-18 09:44:35,244 INFO sqlalchemy.engine.Engine [no key 0.00011s] ()
+2026-05-18 09:44:35,285 INFO sqlalchemy.engine.Engine CREATE UNIQUE INDEX ix_outreach_emails_transactional_id ON outreach_emails (transactional_id)
+2026-05-18 09:44:35,285 INFO sqlalchemy.engine.Engine [no key 0.00010s] ()
+2026-05-18 09:44:35,326 INFO sqlalchemy.engine.Engine CREATE INDEX ix_outreach_emails_id ON outreach_emails (id)
+2026-05-18 09:44:35,326 INFO sqlalchemy.engine.Engine [no key 0.00010s] ()
+2026-05-18 09:44:35,367 INFO sqlalchemy.engine.Engine COMMIT
+✓ Table 'outreach_emails' created successfully.
+Creating table 'tracking_events'...
+2026-05-18 09:44:35,389 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-05-18 09:44:35,389 INFO sqlalchemy.engine.Engine SET search_path TO public
+2026-05-18 09:44:35,389 INFO sqlalchemy.engine.Engine [cached since 0.9724s ago] ()
+2026-05-18 09:44:35,452 INFO sqlalchemy.engine.Engine 
+CREATE TABLE tracking_events (
+	id SERIAL NOT NULL, 
+	transactional_id VARCHAR, 
+	event_type VARCHAR, 
+	timestamp TIMESTAMP WITHOUT TIME ZONE, 
+	payload JSON, 
+	PRIMARY KEY (id)
+)
+
+
+2026-05-18 09:44:35,452 INFO sqlalchemy.engine.Engine [no key 0.00011s] ()
+2026-05-18 09:44:35,494 INFO sqlalchemy.engine.Engine CREATE INDEX ix_tracking_events_transactional_id ON tracking_events (transactional_id)
+2026-05-18 09:44:35,494 INFO sqlalchemy.engine.Engine [no key 0.00011s] ()
+2026-05-18 09:44:35,535 INFO sqlalchemy.engine.Engine CREATE INDEX ix_tracking_events_id ON tracking_events (id)
+2026-05-18 09:44:35,535 INFO sqlalchemy.engine.Engine [no key 0.00013s] ()
+2026-05-18 09:44:35,576 INFO sqlalchemy.engine.Engine COMMIT
+✓ Table 'tracking_events' created successfully.
+
+Seeding data into remote Supabase database...
+2026-05-18 09:44:35,599 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-05-18 09:44:35,603 INFO sqlalchemy.engine.Engine SELECT users.user_id, users.full_name, users.email, users.password_hash, users.is_active, users.created_at, users.updated_at, users.linkedin_url, users.github_url, users.profile_data 
+FROM users 
+WHERE users.email = $1::VARCHAR
+2026-05-18 09:44:35,603 INFO sqlalchemy.engine.Engine [generated in 0.00024s] ('om@example.com',)
+✓ User added to seed.
+2026-05-18 09:44:35,675 INFO sqlalchemy.engine.Engine INSERT INTO users (user_id, full_name, email, password_hash, is_active, created_at, updated_at, linkedin_url, github_url, profile_data) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::BOOLEAN, $6::TIMESTAMP WITHOUT TIME ZONE, $7::TIMESTAMP WITHOUT TIME ZONE, $8::VARCHAR, $9::VARCHAR, $10::JSON)
+2026-05-18 09:44:35,675 INFO sqlalchemy.engine.Engine [generated in 0.00035s] ('c2caf7f6-f557-48bb-bc49-7e1ac34d1e5a', 'Om Anand', 'om@example.com', 'pbkdf2:sha256:600000$defaultseededhash', True, datetime.datetime(2026, 5, 18, 9, 44, 35, 675720), datetime.datetime(2026, 5, 18, 9, 44, 35, 675726), '', '', '{"name": "Om Anand", "email": "om@example.com", "phone": "1234567890", "skills": ["Python", "FastAPI", "Docker", "PostgreSQL", "React"], "projects":  ... (12 characters truncated) ... Job Outreach System", "description": ["Built an AI-powered system for job outreach using FastAPI and Llama 3."]}], "experience": [], "education": []}')
+2026-05-18 09:44:35,718 INFO sqlalchemy.engine.Engine SELECT job_listings.id, job_listings.title, job_listings.company_name, job_listings.location, job_listings.description, job_listings.tech_stack, job_listings.job_url, job_listings.source, job_listings.created_at 
+FROM job_listings 
+WHERE job_listings.job_url = $1::VARCHAR
+2026-05-18 09:44:35,718 INFO sqlalchemy.engine.Engine [generated in 0.00016s] ('https://careers.google.com/jobs/123',)
+✓ Job listings added to seed.
+2026-05-18 09:44:35,761 INFO sqlalchemy.engine.Engine INSERT INTO job_listings (title, company_name, location, description, job_url, source, created_at) SELECT p0::VARCHAR, p1::VARCHAR, p2::VARCHAR, p3::VARCHAR, p4::VARCHAR, p5::VARCHAR, p6::TIMESTAMP WITHOUT TIME ZONE FROM (VALUES ($1::VARCHAR, $2::VAR ... 363 characters truncated ... 3, p4, p5, p6, sen_counter) ORDER BY sen_counter RETURNING job_listings.id, job_listings.id AS id__1
+2026-05-18 09:44:35,761 INFO sqlalchemy.engine.Engine [generated in 0.00014s (insertmanyvalues) 1/1 (ordered)] ('Senior Backend Engineer', 'Google', 'Mountain View, CA', 'We are looking for a senior backend engineer to join our cloud team. Experience with Python and distributed systems is required.', 'https://careers.google.com/jobs/123', 'LinkedIn', datetime.datetime(2026, 5, 18, 9, 44, 35, 761716), 'AI Research Scientist', 'OpenAI', 'San Francisco, CA', 'Join us in building safe and beneficial AI. Expertise in LLMs and PyTorch is a must.', 'https://openai.com/careers/456', 'Direct', datetime.datetime(2026, 5, 18, 9, 44, 35, 761719), 'Fullstack Developer', 'Stripe', 'Remote', 'Help us build the future of payments. Proficiency in React and Ruby on Rails/Python preferred.', 'https://stripe.com/jobs/789', 'Indeed', datetime.datetime(2026, 5, 18, 9, 44, 35, 761721))
+2026-05-18 09:44:35,812 INFO sqlalchemy.engine.Engine SELECT company_profiles.id, company_profiles.name, company_profiles.website, company_profiles.vision, company_profiles.products, company_profiles.tech_stack, company_profiles.engineering_culture, company_profiles.careers_email, company_profiles.last_enriched 
+FROM company_profiles 
+WHERE company_profiles.name = $1::VARCHAR
+2026-05-18 09:44:35,813 INFO sqlalchemy.engine.Engine [generated in 0.00021s] ('Google',)
+✓ Company profiles added to seed.
+2026-05-18 09:44:35,857 INFO sqlalchemy.engine.Engine INSERT INTO company_profiles (name, website, vision, tech_stack, engineering_culture, careers_email, last_enriched) SELECT p0::VARCHAR, p1::VARCHAR, p2::VARCHAR, p3::JSON, p4::VARCHAR, p5::VARCHAR, p6::TIMESTAMP WITHOUT TIME ZONE FROM (VALUES ($1::VA ... 256 characters truncated ... 5, p6, sen_counter) ORDER BY sen_counter RETURNING company_profiles.id, company_profiles.id AS id__1
+2026-05-18 09:44:35,857 INFO sqlalchemy.engine.Engine [generated in 0.00017s (insertmanyvalues) 1/1 (ordered)] ('Google', 'https://google.com', "To organize the world's information and make it universally accessible and useful.", '["C++", "Python", "Go", "Java", "TensorFlow"]', 'Data-driven, collaborative, and focused on scale.', None, datetime.datetime(2026, 5, 18, 9, 44, 35, 857392), 'OpenAI', 'https://openai.com', 'To ensure that artificial general intelligence benefits all of humanity.', '["Python", "PyTorch", "Kubernetes"]', 'Rapid iteration, research-focused, and safety-conscious.', None, datetime.datetime(2026, 5, 18, 9, 44, 35, 857396))
+2026-05-18 09:44:35,901 INFO sqlalchemy.engine.Engine SELECT job_listings.id, job_listings.title, job_listings.company_name, job_listings.location, job_listings.description, job_listings.tech_stack, job_listings.job_url, job_listings.source, job_listings.created_at 
+FROM job_listings
+2026-05-18 09:44:35,901 INFO sqlalchemy.engine.Engine [generated in 0.00014s] ()
+2026-05-18 09:44:35,942 INFO sqlalchemy.engine.Engine SELECT outreach_emails.id, outreach_emails.transactional_id, outreach_emails.recipient_email, outreach_emails.subject, outreach_emails.body, outreach_emails.strategy, outreach_emails.status, outreach_emails.job_id, outreach_emails.user_id, outreach_emails.sent_at 
+FROM outreach_emails 
+WHERE outreach_emails.transactional_id = $1::VARCHAR
+2026-05-18 09:44:35,943 INFO sqlalchemy.engine.Engine [generated in 0.00017s] ('t_12345',)
+✓ Outreach emails with relational user/job binding added to seed.
+2026-05-18 09:44:35,986 INFO sqlalchemy.engine.Engine INSERT INTO outreach_emails (transactional_id, recipient_email, subject, body, strategy, status, job_id, user_id, sent_at) SELECT p0::VARCHAR, p1::VARCHAR, p2::VARCHAR, p3::VARCHAR, p4::VARCHAR, p5::VARCHAR, p6::INTEGER, p7::VARCHAR, p8::TIMESTAMP WI ... 511 characters truncated ...  p7, p8, sen_counter) ORDER BY sen_counter RETURNING outreach_emails.id, outreach_emails.id AS id__1
+2026-05-18 09:44:35,986 INFO sqlalchemy.engine.Engine [generated in 0.00014s (insertmanyvalues) 1/1 (ordered)] ('t_12345', 'hiring@google.com', 'Personalized Outreach - Om Anand', "Hi, I noticed your opening for a Senior Backend Engineer. I've built several AI systems using FastAPI...", 'project-focused', 'OPENED', 1, 'c2caf7f6-f557-48bb-bc49-7e1ac34d1e5a', datetime.datetime(2026, 5, 18, 9, 44, 35, 986135), 't_67890', 'jobs@openai.com', 'Passionate about AI Safety - Om Anand', "Hello, I'm a huge fan of OpenAI's mission. My recent project involves using Llama 3 for intelligent outreach...", 'curiosity-driven', 'REPLIED', 2, 'c2caf7f6-f557-48bb-bc49-7e1ac34d1e5a', datetime.datetime(2026, 5, 18, 9, 44, 35, 986139), 't_11121', 'recruiter@stripe.com', 'Backend Developer - Om Anand', "Hi, I'm reaching out regarding the Fullstack Developer role. I have extensive experience with Python and React...", 'skill-focused', 'SENT', 3, 'c2caf7f6-f557-48bb-bc49-7e1ac34d1e5a', datetime.datetime(2026, 5, 18, 9, 44, 35, 986140))
+2026-05-18 09:44:36,038 INFO sqlalchemy.engine.Engine SELECT tracking_events.id, tracking_events.transactional_id, tracking_events.event_type, tracking_events.timestamp, tracking_events.payload 
+FROM tracking_events 
+WHERE tracking_events.transactional_id = $1::VARCHAR
+2026-05-18 09:44:36,039 INFO sqlalchemy.engine.Engine [generated in 0.00015s] ('t_12345',)
+✓ Tracking events added to seed.
+2026-05-18 09:44:36,080 INFO sqlalchemy.engine.Engine INSERT INTO tracking_events (transactional_id, event_type, timestamp, payload) SELECT p0::VARCHAR, p1::VARCHAR, p2::TIMESTAMP WITHOUT TIME ZONE, p3::JSON FROM (VALUES ($1::VARCHAR, $2::VARCHAR, $3::TIMESTAMP WITHOUT TIME ZONE, $4::JSON, 0), ($5::VARC ... 160 characters truncated ...  p2, p3, sen_counter) ORDER BY sen_counter RETURNING tracking_events.id, tracking_events.id AS id__1
+2026-05-18 09:44:36,080 INFO sqlalchemy.engine.Engine [generated in 0.00016s (insertmanyvalues) 1/1 (ordered)] ('t_12345', 'OPEN', datetime.datetime(2026, 5, 18, 9, 44, 36, 80647), '{"email": "hiring@google.com"}', 't_67890', 'OPEN', datetime.datetime(2026, 5, 18, 9, 44, 36, 80651), '{"email": "jobs@openai.com"}', 't_67890', 'REPLY', datetime.datetime(2026, 5, 18, 9, 44, 36, 80653), '{"email": "jobs@openai.com"}')
+2026-05-18 09:44:36,122 INFO sqlalchemy.engine.Engine COMMIT
+=== SUCCESS: SUPABASE DATABASE SEEDED SUCCESSFULLY! ===
