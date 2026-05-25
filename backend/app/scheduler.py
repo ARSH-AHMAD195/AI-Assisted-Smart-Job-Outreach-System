@@ -31,8 +31,46 @@ async def discovery_job():
                     db.add(db_job)
             await db.commit()
 
+
+async def outreach_queue_job():
+    """
+    Periodic job to process the outreach queue.
+    Runs every 5 minutes, processing pending items for all active campaigns
+    while respecting rate limits, company caps, and stagger intervals.
+    """
+    from app.services.outreach_queue_service import OutreachQueueService
+
+    print("[Scheduler] Processing outreach queue...")
+    async with AsyncSessionLocal() as db:
+        try:
+            await OutreachQueueService.process_queue(db)
+        except Exception as e:
+            print(f"[Scheduler] Outreach queue error: {e}")
+
+
+async def optimization_job():
+    """
+    Daily adaptive optimization.
+    Updates behavioral confidence scores, aggregates strategy performance,
+    and decays stale contacts.
+    """
+    from app.services.adaptive_optimizer_service import AdaptiveOptimizerService
+
+    print("[Scheduler] Running daily optimization...")
+    async with AsyncSessionLocal() as db:
+        try:
+            await AdaptiveOptimizerService.run_daily_optimization(db)
+        except Exception as e:
+            print(f"[Scheduler] Optimization error: {e}")
+
+
 def start_scheduler():
     # Add discovery job every 6 hours
     scheduler.add_job(discovery_job, 'interval', hours=6)
+    # Add outreach queue processor every 5 minutes
+    scheduler.add_job(outreach_queue_job, 'interval', minutes=5)
+    # Add daily optimization job
+    scheduler.add_job(optimization_job, 'interval', hours=24)
     scheduler.start()
-    print("Scheduler started.")
+    print("Scheduler started (discovery: 6h, outreach queue: 5m, optimization: 24h).")
+

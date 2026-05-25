@@ -42,7 +42,7 @@ class DiscoveryService:
                 ))
             
             # Save discovered jobs to the database
-            for item in listings:
+            for idx, item in enumerate(listings):
                 try:
                     if item.job_url:
                         query = select(DBJobListing).where(DBJobListing.job_url == item.job_url)
@@ -58,9 +58,16 @@ class DiscoveryService:
                                 source="JobSpy"
                             )
                             db.add(db_job)
-                            logger.info(f"Pushed newly discovered job to database: {item.title} at {item.company}")
+                            await db.flush()
+                            item.id = db_job.id
+                            logger.info(f"Pushed newly discovered job to database: {item.title} at {item.company} with ID {item.id}")
+                        else:
+                            item.id = exists.id
+                    else:
+                        item.id = 1000 + idx
                 except Exception as dbe:
                     logger.warning(f"Error persisting discovered job to DB: {dbe}")
+                    item.id = 1000 + idx
 
             try:
                 await db.commit()
@@ -77,6 +84,7 @@ class DiscoveryService:
     def _get_demo_data(role: str, location: str) -> List[JobSchema]:
         return [
             JobSchema(
+                id=99999,
                 title=f"Senior {role} (Demo)",
                 company="TechCorp",
                 location=location,

@@ -14,6 +14,7 @@ class JobMatchResult(BaseModel):
     analysis: str
 
 class JobListing(BaseModel):
+    id: Optional[int] = None
     title: str
     company: str
     location: str

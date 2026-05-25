@@ -5,6 +5,12 @@ from datetime import datetime
 
 import uuid
 
+# --- Campaign & Contact Intelligence imports ---
+from app.models.contact import CompanyContact
+from app.models.campaign import Campaign, OutreachQueueItem
+from app.models.outreach_event import OutreachEvent
+
+
 class User(Base):
     __tablename__ = "users"
     user_id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -45,6 +51,9 @@ class CompanyProfile(Base):
     engineering_culture = Column(Text)
     careers_email = Column(String)
     last_enriched = Column(DateTime, default=datetime.utcnow)
+
+    # Multi-contact discovery relationship
+    contacts = relationship("CompanyContact", back_populates="company", cascade="all, delete-orphan")
 
 class OutreachEmail(Base):
     __tablename__ = "outreach_emails"

@@ -30,6 +30,9 @@ from app.routers.webhook import router as webhook_router
 from app.routers.jobs import router as jobs_router
 from app.routers.company import router as company_router
 from app.routers.analytics import router as analytics_router
+from app.routers.campaign import router as campaign_router
+from app.routers.contacts import router as contacts_router
+from app.routers.intelligence import router as intelligence_router
 
 from app.scheduler import start_scheduler, scheduler
 
@@ -38,9 +41,21 @@ async def lifespan(app: FastAPI):
     # Startup
     print("Server Startup")
     try:
+        # Create sync database tables (legacy/fallback)
         Base.metadata.create_all(bind=engine)
     except Exception as e:
-        print(f"Database creation failed or skipped: {e}")
+        print(f"Sync Database creation failed or skipped: {e}")
+        
+    try:
+        # Create async database tables (modern campaign/queue/analytics)
+        from app.database import Base as AsyncBase, engine as async_engine
+        import app.models
+        async with async_engine.begin() as conn:
+            await conn.run_sync(AsyncBase.metadata.create_all)
+        print("Async Database tables created successfully.")
+    except Exception as e:
+        print(f"Async Database creation failed: {e}")
+        
     start_scheduler()
     yield
     # Shutdown
@@ -86,6 +101,13 @@ app.include_router(webhook_router)
 app.include_router(jobs_router)
 app.include_router(company_router)
 app.include_router(analytics_router)
+
+# Campaign & Contact Intelligence routers
+app.include_router(campaign_router)
+app.include_router(contacts_router)
+
+# Intelligence & Reasoning routers
+app.include_router(intelligence_router)
 
 @app.get("/")
 async def root():

@@ -28,6 +28,7 @@ from sqlalchemy import update, select
 async def gmass_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     """
     Receive and store tracking events from GMass.
+    On reply events, triggers AI reply classification for the intelligence loop.
     """
     try:
         payload = await request.json()
@@ -63,7 +64,33 @@ async def gmass_webhook(request: Request, db: AsyncSession = Depends(get_db)):
             await db.execute(stmt)
 
     await db.commit()
-    return {"status": "ok", "message": "Event received"}
+
+    # 3. Intelligence layer: Auto-classify reply events
+    classification_result = None
+    if event_data["event_type"] == "Replies" and event_data["tracking_id"]:
+        try:
+            from app.services.reply_classifier_service import ReplyClassifierService
+            classification = await ReplyClassifierService.process_reply_event(
+                db=db,
+                tracking_id=event_data["tracking_id"],
+                reply_text=event_data["raw_data"].get("Body", ""),
+                reply_subject=event_data["raw_data"].get("Subject", ""),
+            )
+            if classification:
+                classification_result = {
+                    "intent": classification.intent,
+                    "confidence": classification.confidence,
+                    "action": classification.suggested_action,
+                }
+                print(f"[Webhook] Reply classified: {classification.intent} ({classification.confidence:.0%})")
+        except Exception as e:
+            print(f"[Webhook] Reply classification failed (non-blocking): {e}")
+
+    return {
+        "status": "ok",
+        "message": "Event received",
+        "classification": classification_result,
+    }
 
 
 def _normalize_event(raw: dict) -> dict:
