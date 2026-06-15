@@ -1,0 +1,5 @@
+1. Job link to apply for the job.
+2. Mail address that bounces must be blocked
+3. If jd has some email must be included
+4. Module flow testing and polishing
+5. Include user based API key system

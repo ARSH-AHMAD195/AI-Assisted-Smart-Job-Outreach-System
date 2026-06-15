@@ -27,7 +27,7 @@ from app.schemas.user import FinalUserProfile
 logger = logging.getLogger(__name__)
 
 # Model configuration
-EMBEDDING_MODEL = "text-embedding-004"
+EMBEDDING_MODEL = "gemini-embedding-2"
 
 
 class EmbeddingService:
