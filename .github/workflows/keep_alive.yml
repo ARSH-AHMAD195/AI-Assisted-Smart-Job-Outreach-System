@@ -1,0 +1,20 @@
+name: Keep Backend and DB Awake
+
+on:
+  schedule:
+    - cron: '*/14 * * * *'
+  workflow_dispatch: 
+
+jobs:
+  ping-services:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Silent Ping Render Backend
+        run: curl -s -o /dev/null -w "Render Status: %{http_code}\n" https://ai-assisted-smart-job-outreach-system.onrender.com
+
+      - name: Silent Ping Supabase DB
+        run: |
+          curl -s -o /dev/null -w "Supabase Status: %{http_code}\n" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            https://your-supabase-project-id.supabase.co/rest/v1/
