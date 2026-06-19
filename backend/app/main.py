@@ -2,6 +2,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 import uvicorn
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 import tempfile
@@ -77,6 +78,9 @@ app.add_middleware(
     allow_headers=["*"],
     allow_credentials=False,
 )
+
+# Session Middleware for Authlib state tracking
+app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
 
 # Import and include routers from HEAD
 try:
